@@ -11,14 +11,54 @@ import sys
 sys.path.append("..") 
 
 import model_communication
+import pygame
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
 # define list of words to spell out
-words = ["K", "ATOM"]
+pygame.init()
+x = 600;
+y = 600;
+screen = pygame.display.set_mode([x, y])
 
+white = (255, 255, 255)
+green = (0, 255, 0)
+blue = (0, 0, 128)
+
+words = ["ATGC"]
+wordscomp = [''];
+for letter in words[0]:
+            if letter == "A":
+                wordscomp[0] += "T"
+            elif letter == "G":
+                wordscomp[0] += "C"
+            elif letter == "T":
+                wordscomp[0] += "A"
+            elif letter == "C":
+                wordscomp[0] += "G"
+bases = len(words[0]);
+font = pygame.font.Font('freesansbold.ttf', 32)
+text_list = [];
+text_list2 = [];
+textRect = [];
+textRect2 = [];
+for i in range(bases):
+    text_list.append(font.render(words[0][i], True, green, blue))
+for i in range(bases):
+    text_list2.append(font.render(wordscomp[0][i], True, green, blue))
+
+
+for i in range(bases):
+    textRect.append(text_list[i].get_rect())
+for i in range(bases):
+    textRect2.append(text_list2[i].get_rect())
+
+for i in range(bases):
+    textRect[i].center = (int(x/(bases+1))*(i+1), int(x/4))
+for i in range(bases):
+    textRect2[i].center = (int(x/(bases+1))*(i+1), int(3 * x / 4))
 # Open the camera
 cap = cv2.VideoCapture(0)
 
@@ -77,8 +117,26 @@ stop = False
 frame_count = 0
 word_idx = 0
 letter_idx = 0
-
+screen.fill(white);
 while stop == False:
+    for i in range(bases):
+        screen.blit(text_list[i], textRect[i])
+    for i in range(bases):
+        screen.blit(text_list2[i], textRect2[i])
+    for event in pygame.event.get():
+
+        # if event object type is QUIT
+        # then quitting the pygame
+        # and program both.
+        if event.type == pygame.QUIT:
+            # deactivates the pygame library
+            pygame.quit()
+
+            # quit the program.
+            quit()
+
+        # Draws the surface object to the screen.
+        pygame.display.flip()
 
     ret, img = cap.read()
     imgFlipped = cv2.flip(img, 1)

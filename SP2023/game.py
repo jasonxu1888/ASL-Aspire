@@ -1,31 +1,31 @@
-#-----Simplified version of Senior_Design_WordGames.py-----#
+#-----Senior Design DNA Game-----#
 
 import cv2
 import os
 import shutil
 import mediapipe as mp
 import tensorflow as tf
+import pygame
 
-# import from one dir above current dir
+# import model functions from one dir above current dir
 import sys
 sys.path.append("..") 
-
 import model_communication
-import pygame
+
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
-# Open the camera
+# open camera
 cap = cv2.VideoCapture(0)
 
 font_face = cv2.FONT_HERSHEY_SIMPLEX
 
-#loading in the ML model
+# loading in model
 model = tf.keras.models.load_model("../model_SIBI.h5")
 
-# Hard Encode for the Prediction
+# hard encode for the prediction
 classes = {
     0:  'A',
     1:  'B',
@@ -60,6 +60,7 @@ DNA_complement = {
     "C": "G",
 }
 
+# input however many sequences here
 words = ["ATGC", "TATATATAT"]
 
 hands = mp_hands.Hands(
@@ -71,7 +72,7 @@ hands = mp_hands.Hands(
 
 
 # create empty folder for storing frames
-# probalby unecessary since never processing past frames...
+# (probalby unecessary since never processing frames in the past...)
 path = "frames"
 if os.path.isdir(path):
     shutil.rmtree(path)
@@ -97,33 +98,12 @@ green = (0, 255, 0)
 blue = (0, 0, 128)
 font = pygame.font.Font('freesansbold.ttf', 40)
 
+# general pygame process: render, then blit (need location), then display
 
-# num_bases = len(words[0])
-# text_list = []
-# text_list2 = []
-# textRect = []
-# textRect2 = []
-# for i in range(num_bases):
-#     text_list.append(font.render(words[0][i], True, green, blue))
-# for i in range(num_bases):
-#     text_list2.append(font.render(wordscomp[0][i], True, green, blue))
-
-
-# for i in range(num_bases):
-#     textRect.append(text_list[i].get_rect())
-# for i in range(num_bases):
-#     textRect2.append(text_list2[i].get_rect())
-
-# for i in range(num_bases):
-#     textRect[i].center = (int(x/(num_bases+1))*(i+1), int(x/4))
-# for i in range(num_bases):
-#     textRect2[i].center = (int(x/(num_bases+1))*(i+1), int(3 * x / 4))
-
-# render, then blit, then display
-
+# starting game
 while stop == False:
     
-    # prepare game interface showing the given DNA sequence, and blanks for what the user must sign/input
+    # prepare game UI showing the given DNA sequence, and blank boxes for what the user must sign/input
     if preparing_game:
         # fill resets the screen
         screen.fill(white)

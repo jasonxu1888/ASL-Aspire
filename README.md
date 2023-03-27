@@ -1,1 +1,1 @@
-# ASL-Aspire
+# ASL-Webcam Project

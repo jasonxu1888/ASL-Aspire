@@ -61,7 +61,7 @@ DNA_complement = {
 }
 
 # input however many sequences here
-words = ["ATGC", "TATATATAT"]
+words = ["ATGCAT", "TATATAT", "TAGCTAC"]
 
 hands = mp_hands.Hands(
         model_complexity=0,
@@ -132,11 +132,9 @@ while stop == False:
 
     cv2.imwrite(f'{path}/frame.jpg', img)
 
-    # mediapipe suggestion for improving performance
-    imgFlipped.flags.writeable = False
+    
 
     # every 5th frame is sent to model for prediction
-    # check if user signs correct DNA complement
     if frame_count % 5 == 0:
         classified_letter = model_communication.model(f"{path}/frame.jpg", model)
 
@@ -157,10 +155,24 @@ while stop == False:
                     letter_idx = 0
                     preparing_game = True
     
+    # adding back mediapipe annotations
+    # mediapipe suggestion for improving performance
+    imgFlipped.flags.writeable = False
+    imgFlipped = cv2.cvtColor(imgFlipped, cv2.COLOR_BGR2RGB) # convert to RGB for processing
+    results = hands.process(imgFlipped)
+    imgFlipped.flags.writeable = True
+    imgFlipped = cv2.cvtColor(imgFlipped, cv2.COLOR_RGB2BGR) # convert back to BGR to display proper colors
+    if results.multi_hand_landmarks:
+        for hand_landmarks in results.multi_hand_landmarks:
+            mp_drawing.draw_landmarks(
+            imgFlipped,
+            hand_landmarks,
+            mp_hands.HAND_CONNECTIONS,
+            mp_drawing_styles.get_default_hand_landmarks_style(),
+            mp_drawing_styles.get_default_hand_connections_style())
+    
     # writing the prediction on the camera
     cv2.putText(imgFlipped, str(classified_letter), (5, 100), font_face, 4, (255, 0, 0), 4, cv2.LINE_AA)
-    
-    # @TODO can consider adding back the mediapipe annotations before displaying frame
 
     cv2.imshow("Webcam Input", imgFlipped)
 
@@ -168,9 +180,7 @@ while stop == False:
 
     #checking events for stopping program
     for event in pygame.event.get():
-        if event.type == pygame.QUIT: 
-            stop = True
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE): 
             stop = True
     if cv2.waitKey(100) == 27 or cv2.getWindowProperty("Webcam Input", cv2.WND_PROP_VISIBLE) < 1:
         stop = True

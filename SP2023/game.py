@@ -6,6 +6,7 @@ import shutil
 import mediapipe as mp
 import tensorflow as tf
 import pygame
+import numpy
 
 # import model functions from one dir above current dir
 import sys
@@ -93,12 +94,17 @@ y = 600
 screen = pygame.display.set_mode([x, y])
 
 # simple UI elements
-white = (255, 255, 255)
+white = (0, 255, 255)
 green = (0, 255, 0)
 blue = (0, 0, 128)
-font = pygame.font.Font('freesansbold.ttf', 40)
+font = pygame.font.SysFont('courier', 40)
 
 # general pygame process: render, then blit (need location), then display
+
+box = pygame.image.load("box.png").convert_alpha()
+#box.set_colorkey((255,255,255))
+box = pygame.transform.scale(box, (60,60))
+
 
 # starting game
 while stop == False:
@@ -110,18 +116,21 @@ while stop == False:
 
         num_letters = len(words[word_idx])
 
-        given_sequence = [font.render(letter, True, green, blue) for letter in words[word_idx]]
+        given_sequence = [font.render(letter, True, blue) for letter in words[word_idx]]
         # blank sequence will be blank because letter color and background color are the same (blue, blue)
-        blank_sequence = [font.render(letter, True, blue, blue) for letter in words[word_idx]]
+        blank_sequence = [font.render(letter, True, blue) for letter in words[word_idx]]
 
         # finding locations for the letters
-        given_loc = [(int((x / (num_letters + 1)) * (i + 1)), int((x / 4))) for i in range(num_letters)]
-        blank_loc = [(int((x / (num_letters + 1)) * (i + 1)), int((3 * x / 4))) for i in range(num_letters)]
+        given_loc = numpy.array([(int((x / (num_letters + 1)) * (i + 1)), int((x / 4))) for i in range(num_letters)])
+        blank_loc = numpy.array([(int((x / (num_letters + 1)) * (i + 1)), int((3 * x / 4))) for i in range(num_letters)])
 
         # blitting and displaying
         for i in range(num_letters):
             screen.blit(given_sequence[i], given_loc[i])
+            screen.blit(box, given_loc[i] - [18.5,9])
             screen.blit(blank_sequence[i], blank_loc[i])
+            screen.blit(box, blank_loc[i] - [18.5,9])
+        screen.blit(box, (0, 0))
         pygame.display.update()
  
         # done setting up game display

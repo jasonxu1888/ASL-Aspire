@@ -26,6 +26,9 @@ font_face = cv2.FONT_HERSHEY_SIMPLEX
 # loading in model
 model = tf.keras.models.load_model("../model_SIBI.h5")
 
+#instructions for the user on how to play the game
+instructions = ("Sign the Complementary Base")
+
 # hard encode for the prediction
 classes = {
     0:  'A',
@@ -94,31 +97,34 @@ y = 600
 screen = pygame.display.set_mode([x, y])
 
 # simple UI elements
-white = (0, 255, 255)
+white = (255, 255, 255)
 green = (0, 255, 0)
 blue = (0, 0, 128)
+black = (0,0,0)
 font = pygame.font.SysFont('courier', 40)
+fontint = pygame.font.SysFont('courier', 28)
+fontint.set_bold(True)
 
 # general pygame process: render, then blit (need location), then display
 
 box = pygame.image.load("box.png").convert_alpha()
 #box.set_colorkey((255,255,255))
 box = pygame.transform.scale(box, (60,60))
-
+bg = pygame.image.load("bg.png")
+bg = pygame.transform.scale(bg, (x,y))
 
 # starting game
 while stop == False:
-    
+
     # prepare game UI showing the given DNA sequence, and blank boxes for what the user must sign/input
     if preparing_game:
         # fill resets the screen
-        screen.fill(white)
-
+        screen.blit(bg, (0,0))
         num_letters = len(words[word_idx])
 
-        given_sequence = [font.render(letter, True, blue) for letter in words[word_idx]]
+        given_sequence = [font.render(letter, True, black) for letter in words[word_idx]]
         # blank sequence will be blank because letter color and background color are the same (blue, blue)
-        blank_sequence = [font.render(letter, True, blue) for letter in words[word_idx]]
+        blank_sequence = [font.render(letter, True, black) for letter in words[word_idx]]
 
         # finding locations for the letters
         given_loc = numpy.array([(int((x / (num_letters + 1)) * (i + 1)), int((x / 4))) for i in range(num_letters)])
@@ -128,9 +134,9 @@ while stop == False:
         for i in range(num_letters):
             screen.blit(given_sequence[i], given_loc[i])
             screen.blit(box, given_loc[i] - [18.5,9])
-            screen.blit(blank_sequence[i], blank_loc[i])
+            #screen.blit(blank_sequence[i], blank_loc[i])
             screen.blit(box, blank_loc[i] - [18.5,9])
-        screen.blit(box, (0, 0))
+        screen.blit(fontint.render(instructions, True, black), (80, 60))
         pygame.display.update()
  
         # done setting up game display
@@ -149,7 +155,7 @@ while stop == False:
 
         # if correct, update pygame display
         if classified_letter == DNA_complement[words[word_idx][letter_idx]]:
-            screen.blit(font.render(classified_letter, True, green, blue), blank_loc[letter_idx])
+            screen.blit(font.render(classified_letter, True, blue), blank_loc[letter_idx])
             pygame.display.update()
 
             # advance to next letter and check for finishing 

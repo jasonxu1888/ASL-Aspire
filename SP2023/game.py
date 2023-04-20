@@ -112,8 +112,9 @@ base_structures = {
     "T" : pygame.transform.scale(pygame.image.load("images/base-T.png").convert_alpha(), (125,120))
 }
 
+# -- Game Portion -- 
+# general pygame process: render, then blit (need location), then update display
 
-# general pygame process: render, then blit (need location), then display
 running = True
 preparing_game = False
 start_screen = True
@@ -155,7 +156,7 @@ while running == True:
         if event.type == pygame.QUIT:   
             running = False
 
-    # prepare game UI showing the given DNA sequence, and blank boxes for what the user must sign/input
+    # prepare game UI for showing the given DNA sequence, and blank boxes for what the user must sign/input
     if preparing_game:
 
         # resetting screen by blitting background
@@ -205,7 +206,7 @@ while running == True:
 
     cv2.imwrite(f'{path}/frame.jpg', img)
 
-    # every 5th frame is sent to model for prediction
+    # every 25th frame is sent to model for prediction (can change this)
     if frame_count % 25 == 0:
         classified_letter = model_communication.model(f"{path}/frame.jpg", model)
 

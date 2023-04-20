@@ -7,6 +7,8 @@ import mediapipe as mp
 import tensorflow as tf
 import pygame
 import numpy
+import random
+import time
 
 # import model functions from one dir above current dir
 import sys
@@ -21,13 +23,14 @@ mp_hands = mp.solutions.hands
 # open camera
 cap = cv2.VideoCapture(0)
 
-font_face = cv2.FONT_HERSHEY_SIMPLEX
+font_face = cv2.FONT_HERSHEY_DUPLEX
 
 # loading in model
 model = tf.keras.models.load_model("../model_SIBI.h5")
 
-#instructions for the user on how to play the game
-instructions = ("Sign the Complementary Base")
+# starting and ending text
+instructions = "Sign the Complementary Base!"
+thanks = ("Thanks for Playing!")
 
 # hard encode for the prediction
 classes = {
@@ -64,9 +67,6 @@ DNA_complement = {
     "C": "G",
 }
 
-# input however many sequences here
-words = ["ATGCAT", "TATATAT", "TAGCTAC"]
-
 hands = mp_hands.Hands(
         model_complexity=0,
         min_detection_confidence=0.5,
@@ -82,14 +82,6 @@ if os.path.isdir(path):
     shutil.rmtree(path)
 os.mkdir(path)
 
-stop = False
-preparing_game = True
-
-# Actual game begins, user starts signing 
-frame_count = 0
-word_idx = 0
-letter_idx = 0
-
 # set up pygame window
 pygame.init()
 x = 600
@@ -101,74 +93,131 @@ white = (255, 255, 255)
 green = (0, 255, 0)
 blue = (0, 0, 128)
 black = (0,0,0)
-font = pygame.font.SysFont('courier', 40)
-fontint = pygame.font.SysFont('courier', 28)
-fontint.set_bold(True)
+font = pygame.font.SysFont('courier', 28)
+font.set_bold(True)
+
+# mapping letters to UI elements
+box = pygame.transform.scale(pygame.image.load("images/box.png").convert_alpha(), (60,60))
+bg = pygame.transform.scale(pygame.image.load("images/bg.png"), (x,y))
+box_letters = {
+    "A" : pygame.transform.scale(pygame.image.load("images/box-A.png").convert_alpha(), (60,60)),
+    "C" : pygame.transform.scale(pygame.image.load("images/box-C.png").convert_alpha(), (60,60)),
+    "G" : pygame.transform.scale(pygame.image.load("images/box-G.png").convert_alpha(), (60,60)),
+    "T" : pygame.transform.scale(pygame.image.load("images/box-T.png").convert_alpha(), (60,60))
+}
+base_structures = {
+    "A" : pygame.transform.scale(pygame.image.load("images/base-A.png").convert_alpha(), (120,130)),
+    "C" : pygame.transform.scale(pygame.image.load("images/base-C.png").convert_alpha(), (120,150)),
+    "G" : pygame.transform.scale(pygame.image.load("images/base-G.png").convert_alpha(), (135,120)),
+    "T" : pygame.transform.scale(pygame.image.load("images/base-T.png").convert_alpha(), (125,120))
+}
+
 
 # general pygame process: render, then blit (need location), then display
+running = True
+preparing_game = False
+start_screen = True
+frame_count = 0
 
-box = pygame.image.load("box.png").convert_alpha()
-#box.set_colorkey((255,255,255))
-box = pygame.transform.scale(box, (60,60))
-bg = pygame.image.load("bg.png")
-bg = pygame.transform.scale(bg, (x,y))
+# -1: not chosen yet by user
+# 0: normal difficulty (letters)
+# 1: advanced difficulty (base pictures)
+difficulty = -1
 
 # starting game
-while stop == False:
+while running == True:
+
+    # setup starting screen UI for displaying game information and choosing difficulty
+    if start_screen:
+        screen.blit(bg, (0,0))
+        screen.blit(pygame.image.load("images/title-screen-resized.png").convert_alpha(), (59, 20))
+        font.underline = True
+        screen.blit(font.render(f"Instructions", True, black), (190, 110))
+        screen.blit(font.render(f"Difficulties", True, black), (190, 230))
+        font.underline = False
+        screen.blit(font.render(instructions, True, black), (60, 150))
+        screen.blit(font.render("Press 'n' for normal", True, black), (130, 270))
+        screen.blit(font.render("Press 'a' for advanced", True, black), (110, 310))
+        screen.blit(font.render("Made by ASL Aspire", True, black), (150, 400))
+        screen.blit(pygame.transform.scale(pygame.image.load("images/logo-resized.png").convert_alpha(), (184,143)), (200, 440))
+        pygame.display.update()
+        start_screen = False
+
+    #checking events for choosing difficulty and stopping program
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_n: # normal
+                preparing_game = True
+                difficulty = 0
+            if event.key == pygame.K_a: # advanced
+                preparing_game = True
+                difficulty = 1
+        if event.type == pygame.QUIT:   
+            running = False
 
     # prepare game UI showing the given DNA sequence, and blank boxes for what the user must sign/input
     if preparing_game:
-        # fill resets the screen
+
+        # resetting screen by blitting background
         screen.blit(bg, (0,0))
-        num_letters = len(words[word_idx])
 
-        given_sequence = [font.render(letter, True, black) for letter in words[word_idx]]
-        # blank sequence will be blank because letter color and background color are the same (blue, blue)
-        blank_sequence = [font.render(letter, True, black) for letter in words[word_idx]]
+        # finding location of UI elements based on difficulty (if using boxed letters or chemical structures)
+        if difficulty == 0:
+            dictionary = box_letters
 
-        # finding locations for the letters
-        given_loc = numpy.array([(int((x / (num_letters + 1)) * (i + 1)), int((x / 4))) for i in range(num_letters)])
-        blank_loc = numpy.array([(int((x / (num_letters + 1)) * (i + 1)), int((3 * x / 4))) for i in range(num_letters)])
+            length = random.randint(4, 8)
+            word = "".join(random.choice("ACTG") for _ in range(length))
+            letter_idx = 0
 
-        # blitting and displaying
-        for i in range(num_letters):
-            screen.blit(given_sequence[i], given_loc[i])
-            screen.blit(box, given_loc[i] - [18.5,9])
-            #screen.blit(blank_sequence[i], blank_loc[i])
-            screen.blit(box, blank_loc[i] - [18.5,9])
-        screen.blit(fontint.render(instructions, True, black), (80, 60))
+            given_loc = numpy.array([(int((x / (length + 1)) * (i + 1)) - 30, int((x / 4))) for i in range(length)])
+            blank_loc = numpy.array([(int((x / (length + 1)) * (i + 1)) - 30, int((2.5 * x / 4))) for i in range(length)])
+        if difficulty == 1:
+            dictionary = base_structures
+
+            length = 4
+            word = "".join(random.choice("ACTG") for _ in range(4))
+            letter_idx = 0
+
+            given_loc = numpy.array([(int((x / (length)) * (i + 1)) - 55-80, int((x / 4))) for i in range(length)])
+            blank_loc = numpy.array([(int((x / (length)) * (i + 1)) - 30-80, int((2.5 * x / 4))) for i in range(length)])
+
+
+        # blitting UI elements
+        for i in range(length):
+            screen.blit(dictionary[word[i]], given_loc[i])
+            screen.blit(box, blank_loc[i])
+
+        # blitting instructions
+        screen.blit(font.render(instructions, True, black), (60, 60))
+
+        # rendering changes
         pygame.display.update()
  
         # done setting up game display
         preparing_game = False
+
+    # do not proceed until difficulty is chosen
+    if difficulty == -1:
+        continue
 
     ret, img = cap.read()
     imgFlipped = cv2.flip(img, 1)
 
     cv2.imwrite(f'{path}/frame.jpg', img)
 
-    
-
     # every 5th frame is sent to model for prediction
-    if frame_count % 5 == 0:
+    if frame_count % 25 == 0:
         classified_letter = model_communication.model(f"{path}/frame.jpg", model)
 
         # if correct, update pygame display
-        if classified_letter == DNA_complement[words[word_idx][letter_idx]]:
-            screen.blit(font.render(classified_letter, True, blue), blank_loc[letter_idx])
+        if classified_letter == DNA_complement[word[letter_idx]]:
+            screen.blit(box_letters[classified_letter], blank_loc[letter_idx])
             pygame.display.update()
 
-            # advance to next letter and check for finishing 
-            # advances to next word if it exists, closes program if it does not
-            if (letter_idx := letter_idx + 1) >= len(words[word_idx]):
-                if (word_idx := word_idx + 1) >= len(words):
-                    # maybe here instead of just breaking out of while loop and freeing resources
-                    # can have like an ending pygame screen like "Thanks for playing!
-                    # and then free resources
-                    break
-                else:
-                    letter_idx = 0
-                    preparing_game = True
+            # advance to next letter and check for finished word
+            if (letter_idx := letter_idx + 1) >= len(word):
+                letter_idx = 0
+                preparing_game = True
     
     # adding back mediapipe annotations
     # mediapipe suggestion for improving performance
@@ -187,21 +236,27 @@ while stop == False:
             mp_drawing_styles.get_default_hand_connections_style())
     
     # writing the prediction on the camera
-    cv2.putText(imgFlipped, str(classified_letter), (5, 100), font_face, 4, (255, 0, 0), 4, cv2.LINE_AA)
+    cv2.putText(imgFlipped, str(classified_letter), (5, 100), font_face, 4, black, 4, cv2.LINE_AA)
 
     cv2.imshow("Webcam Input", imgFlipped)
 
     frame_count += 1
 
-    #checking events for stopping program
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE): 
-            stop = True
-    if cv2.waitKey(100) == 27 or cv2.getWindowProperty("Webcam Input", cv2.WND_PROP_VISIBLE) < 1:
-        stop = True
+    # stop program if webcam window closed
+    if cv2.waitKey(100) and cv2.getWindowProperty("Webcam Input", cv2.WND_PROP_VISIBLE) < 1:
+        running = False
 
-# free all resources used
-pygame.quit()
+# free cam resource (so face is not 'paused' in video)
 cv2.destroyAllWindows()
 cap.release()
+
+# ending "thank you" screen
+screen.blit(bg, (0,0))
+screen.blit(pygame.image.load("images/logo-resized.png").convert_alpha(), (116, 90))
+screen.blit(font.render(thanks, True, black), (135, 400))
+pygame.display.update()
+time.sleep(2)
+
+# free resources
+pygame.quit()
 shutil.rmtree(path)

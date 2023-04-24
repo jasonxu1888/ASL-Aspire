@@ -134,19 +134,22 @@ while running == True:
         screen.blit(pygame.image.load("images/title-screen-resized.png").convert_alpha(), (59, 20))
         font.underline = True
         screen.blit(font.render(f"Instructions", True, black), (190, 110))
-        screen.blit(font.render(f"Difficulties", True, black), (190, 230))
+        screen.blit(font.render(f"Difficulties", True, black), (190, 210))
         font.underline = False
         screen.blit(font.render(instructions, True, black), (60, 150))
-        screen.blit(font.render("Press 'n' for normal", True, black), (130, 270))
-        screen.blit(font.render("Press 'a' for advanced", True, black), (110, 310))
+        screen.blit(font.render("Press 'n' for normal", True, black), (130, 250))
+        screen.blit(font.render("Press 'a' for advanced", True, black), (110, 290))
+        screen.blit(font.render("Press 'r' to restart", True, black), (130, 330))
         screen.blit(font.render("Made by ASL Aspire", True, black), (150, 400))
         screen.blit(pygame.transform.scale(pygame.image.load("images/logo-resized.png").convert_alpha(), (184,143)), (200, 440))
         pygame.display.update()
         start_screen = False
 
-    #checking events for choosing difficulty and stopping program
+    #checking events for choosing difficulty, restarting game, and stopping program
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                start_screen = True
             if event.key == pygame.K_n: # normal
                 preparing_game = True
                 difficulty = 0
@@ -207,7 +210,7 @@ while running == True:
     cv2.imwrite(f'{path}/frame.jpg', img)
 
     # every 25th frame is sent to model for prediction (can change this)
-    if frame_count % 25 == 0:
+    if frame_count % 5 == 0:
         classified_letter = model_communication.model(f"{path}/frame.jpg", model)
 
         # if correct, update pygame display
